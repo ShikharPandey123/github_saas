@@ -1,7 +1,5 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import { Button } from "@/components/ui/button"
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
@@ -9,18 +7,7 @@ import { Bot, CreditCard, LayoutDashboard, Plus, Presentation } from "lucide-rea
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState } from "react";
-
-type Project = {
-  id: string;
-  name: string;
-  githubUrl: string;
-};
-
-const fetchProjects = async (): Promise<Project[]> => {
-  const { data } = await axios.get('/api/project');
-  return data;
-};
+import useProject from '@/app/hooks/use-project';
 
 const items = [
     {
@@ -48,13 +35,7 @@ const items = [
 export function AppSidebar() {
     const pathname = usePathname();
     const open = useSidebar();
-    const { data: projects = []} = useQuery({
-  queryKey: ['projects'],
-  queryFn: fetchProjects,
-});
-    const [projectId, setProjectId] = useState<string | null>(null);
-
-    const projectList = projects || [];
+   const { projects = [], projectId, setProjectId } = useProject();
 
     return (
        <Sidebar collapsible="icon" variant="floating">
@@ -96,7 +77,7 @@ export function AppSidebar() {
                     </SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                        {projectList.map(project => {
+                        {projects.map(project => {
                             return (
                                 <SidebarMenuItem key={project.id}>
                                     <SidebarMenuButton asChild>
@@ -137,3 +118,4 @@ export function AppSidebar() {
        </Sidebar>
     )
 }
+
