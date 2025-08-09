@@ -1,5 +1,7 @@
 'use client'
 
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 import { Button } from "@/components/ui/button"
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
@@ -7,7 +9,18 @@ import { Bot, CreditCard, LayoutDashboard, Plus, Presentation } from "lucide-rea
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-// import { use } from "react"
+import { useState } from "react";
+
+type Project = {
+  id: string;
+  name: string;
+  githubUrl: string;
+};
+
+const fetchProjects = async (): Promise<Project[]> => {
+  const { data } = await axios.get('/api/project');
+  return data;
+};
 
 const items = [
     {
@@ -31,21 +44,18 @@ const items = [
         icon: CreditCard
     }
 ]
-const projectS=[
-    {
-        name: "Project 1",
-    },
-    {
-        name: "Project 2",
-    },
-    {
-        name: "Project 3",
-    }
-]
 
 export function AppSidebar() {
-    const pathname=usePathname()
-    const open=useSidebar()
+    const pathname = usePathname();
+    const open = useSidebar();
+    const { data: projects = []} = useQuery({
+  queryKey: ['projects'],
+  queryFn: fetchProjects,
+});
+    const [projectId, setProjectId] = useState<string | null>(null);
+
+    const projectList = projects || [];
+
     return (
        <Sidebar collapsible="icon" variant="floating">
             <SidebarHeader>
@@ -86,20 +96,20 @@ export function AppSidebar() {
                     </SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                        {projectS.map(project => {
+                        {projectList.map(project => {
                             return (
-                                <SidebarMenuItem key={project.name}>
+                                <SidebarMenuItem key={project.id}>
                                     <SidebarMenuButton asChild>
-                                        <div>
-                                        <div className={cn(
-                                            'rounded-sm border size-6 flex items-center justify-center text-sm bg-white text-primary',
-                                            {
-                                                'bg-primary text-white': true
-                                            }
-                                        )}>
-                                            {project.name[0]}
-                                        </div>
-                                        <span className="ml-2">{project.name}</span>
+                                        <div onClick={() => setProjectId(project.id)}>
+                                            <div className={cn(
+                                                'rounded-sm border size-6 flex items-center justify-center text-sm bg-white text-primary',
+                                                {
+                                                    'bg-primary text-white': project.id === projectId
+                                                }
+                                            )}>
+                                                {project.name[0]}
+                                            </div>
+                                            <span className="ml-2">{project.name}</span>
                                         </div>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

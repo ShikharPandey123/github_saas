@@ -5,6 +5,7 @@ import React, { useState } from 'react'
 import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
 import axios from "axios";
+import useRefetch from '@/app/hooks/use-refetch'
 
 type FormInput={
     repoURL: string
@@ -14,6 +15,7 @@ type FormInput={
 const CreatePage = () => {
   const {register,handleSubmit,reset}=useForm<FormInput>()
   const [isLoading, setIsLoading] = useState(false);
+  const refetch = useRefetch();
   async function onSubmit(data: FormInput) {
     try {
       setIsLoading(true);
@@ -25,6 +27,7 @@ const CreatePage = () => {
 
       console.log("Project created:", res.data);
       toast.success("Project created successfully!");
+      refetch();
       reset();
     } catch (error) {
       console.error(error);
@@ -52,8 +55,7 @@ const CreatePage = () => {
                     type='url'
                     required />
                     <div className='h-2'></div>
-                    <Input {...register('githubToken', { required: true })} placeholder='Enter your GitHub Token(Optional)'/>
-                    <div className='h-2'></div>
+                    <Input {...register('githubToken')} placeholder='Enter your GitHub Token(Optional)'/>
                     <div className='h-4'></div>
                     <Button type='submit' disabled={isLoading}>{isLoading ? "Creating..." : "Create Project"}</Button>
                 </form>
