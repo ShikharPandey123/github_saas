@@ -1,8 +1,10 @@
 "use client"
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import React from 'react'
+import React, { useState } from 'react'
+import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
+import axios from "axios";
 
 type FormInput={
     repoURL: string
@@ -11,10 +13,26 @@ type FormInput={
 }
 const CreatePage = () => {
   const {register,handleSubmit,reset}=useForm<FormInput>()
-  function onSubmit(data: FormInput) {
-    //TODO:convert this to toast 
-    window.alert(JSON.stringify(data,null,2))
-    return true
+  const [isLoading, setIsLoading] = useState(false);
+  async function onSubmit(data: FormInput) {
+    try {
+      setIsLoading(true);
+      const res = await axios.post("/api/project", {
+        name: data.projectName,
+        githubUrl: data.repoURL,
+        githubToken: data.githubToken || undefined,
+      });
+
+      console.log("Project created:", res.data);
+      toast.success("Project created successfully!");
+      reset();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to create project");
+    }
+    finally {
+    setIsLoading(false);
+  }
   }
   return (
     <div className='flex items-center gap-12 h-full justify-center'>
@@ -37,7 +55,7 @@ const CreatePage = () => {
                     <Input {...register('githubToken', { required: true })} placeholder='Enter your GitHub Token(Optional)'/>
                     <div className='h-2'></div>
                     <div className='h-4'></div>
-                    <Button type='submit' >Create Project</Button>
+                    <Button type='submit' disabled={isLoading}>{isLoading ? "Creating..." : "Create Project"}</Button>
                 </form>
             </div>
         </div>
