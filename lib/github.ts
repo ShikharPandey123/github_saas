@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Octokit } from "octokit";
 import { prisma } from "./prisma";
+import { aiSummariseCommit } from "./gemini";
+import axios from "axios";
 
 export const github = new Octokit({
   auth: process.env.GITHUB_TOKEN,
@@ -40,31 +42,79 @@ export const getCommitHashes = async (
   }));
 };
 export const pullCommits = async (projectId: string) => {
-  const { project, githubUrl } = await fetchProjectGithubUrl(projectId)
-  const commitHashes = await getCommitHashes(githubUrl)
-  const unprocessedCommits = await filterUnprocessedCommits(commitHashes, projectId)
-  console.log("Unprocessed Commits:", unprocessedCommits);
-  return unprocessedCommits;
-};
-async function fetchProjectGithubUrl(projectId: string) {
-  const project= await prisma.project.findUnique({
-    where: { id: projectId },
-    select: {githubUrl: true }
+  const { project, githubUrl } = await fetchProjectGithubUrl(projectId);
+  const commitHashes = await getCommitHashes(githubUrl);
+  const unprocessedCommits = await filterUnprocessedCommits(
+    commitHashes,
+    projectId
+  );
+  const summaryResponses = await Promise.allSettled(
+    unprocessedCommits.map(commit => {
+      return summariseCommit(githubUrl, commit.commitHash);
+    }));
+  const summaries = summaryResponses.map((response) => {
+    if (response.status === "fulfilled") {
+      return response.value;
+    } else {
+      console.error("Error summarising commit:", response.reason);
+      return null;
+    }
   })
-  if(!project?.githubUrl) {
+  const commits= await prisma.commit.createMany({
+    data: summaries.map((summary, index) =>{
+      console.log(`processing commit ${index}`)
+      return{
+        projectId: projectId,
+        commitHash: unprocessedCommits[index]!.commitHash,
+        commitMessage: unprocessedCommits[index]!.commitMessage,
+        commitAuthorName: unprocessedCommits[index]!.commitAuthorName,
+        commitAuthorAvatar: unprocessedCommits[index]!.commitAuthorAvatar,
+        commitDate: unprocessedCommits[index]!.commitDate,
+        // summary: summary ? summary : ""
+        summary
+      }
+    }),
+  });
+  return commits;
+};
+
+async function summariseCommit(githubUrl: string, commitHash: string) {
+  //get the diff,then pass the diff into ai
+  const { data } = await axios.get(`${githubUrl}/commits/${commitHash}.diff`, {
+    headers: {
+      Accept: "application/vnd.github.v3.diff",
+    },
+  });
+  return aiSummariseCommit(data) || "";
+}
+
+async function fetchProjectGithubUrl(projectId: string) {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { githubUrl: true },
+  });
+  if (!project?.githubUrl) {
     throw new Error("Project not found or GitHub URL is missing");
   }
   return {
     project,
-    githubUrl: project?.githubUrl
+    githubUrl: project?.githubUrl,
   };
 }
-async function filterUnprocessedCommits(commitHashes: Response[], projectId: string) {
+async function filterUnprocessedCommits(
+  commitHashes: Response[],
+  projectId: string
+) {
   const processedCommits = await prisma.commit.findMany({
     where: { projectId },
-    select: { commitHash: true }
+    select: { commitHash: true },
   });
-  const unprocessedCommits = commitHashes.filter((commit) => !processedCommits.some((processed) => processed.commitHash === commit.commitHash));
+  const unprocessedCommits = commitHashes.filter(
+    (commit) =>
+      !processedCommits.some(
+        (processed) => processed.commitHash === commit.commitHash
+      )
+  );
   return unprocessedCommits;
 }
 await pullCommits("a544b103-8092-422f-bb0c-4b1f270b962e").then(console.log);

@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { pullCommits } from "@/lib/github";
 
 const createProjectSchema = z.object({
   githubUrl: z.string(),
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
         },
       },
     });
+    await pullCommits(project.id);
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
