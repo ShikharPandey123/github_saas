@@ -265,18 +265,22 @@ index 21e2332..6da44da 100644
 
 export async function summariseCode(doc: Document) {
   console.log("getting summary for",doc.metadata.source);
-  const code = doc.pageContent.slice(0,10000);
-  const response = await model.generateContent([
-    `You are an intelligent senior software engineer who specialises in onboarding junior software engineers onto projects.You are onboarding a junior software engineer and explaining to them the purpose of the ${doc.metadata.source} file .
-    
-    Here is the code: 
----
-    ${code}
----
-   Give a summary no more than 100 words of the code above
-`,
-  ]);
-  return response.response.text();
+  try {
+    const code = doc.pageContent.slice(0,10000);
+    const response = await model.generateContent([
+      `You are an intelligent senior software engineer who specialises in onboarding junior software engineers onto projects.You are onboarding a junior software engineer and explaining to them the purpose of the ${doc.metadata.source} file .
+      
+      Here is the code: 
+  ---
+      ${code}
+  ---
+     Give a summary no more than 100 words of the code above
+  `,
+    ]);
+    return response.response.text();
+  } catch (error) {
+    return ""
+  }
 }
 export async function generateEmbedding(summary:string){
   const model = genAI.getGenerativeModel({

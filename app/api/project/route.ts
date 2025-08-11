@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { pullCommits } from "@/lib/github";
+import { indexGithubRepo } from "@/lib/github-loader";
 
 const createProjectSchema = z.object({
   githubUrl: z.string(),
@@ -36,8 +37,9 @@ export async function POST(request: Request) {
         },
       },
     });
+    await indexGithubRepo(project.id, input.githubUrl, input.githubToken);
     await pullCommits(project.id);
-    console.log("Pull commits response:", await pullCommits(project.id));
+    // console.log("Pull commits response:", await pullCommits(project.id));
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

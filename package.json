@@ -10,6 +10,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.4",
+    "@ai-sdk/rsc": "^1.0.10",
     "@clerk/nextjs": "^6.30.0",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.1",
@@ -43,6 +45,9 @@
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@tanstack/react-query": "^5.84.2",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "@uiw/react-md-editor": "^4.0.8",
+    "ai": "^5.0.10",
     "axios": "^1.11.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -60,6 +65,7 @@
     "react-dom": "19.1.0",
     "react-hook-form": "^7.62.0",
     "react-resizable-panels": "^3.0.4",
+    "react-syntax-highlighter": "^15.6.1",
     "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
