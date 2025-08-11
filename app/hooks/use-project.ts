@@ -12,6 +12,7 @@ type Project = {
 
 const fetchProjects = async (): Promise<Project[]> => {
   const { data } = await axios.get('/api/project');
+  console.log("Fetched projects:", data);
   return data;
 };
 

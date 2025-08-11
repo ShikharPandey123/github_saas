@@ -8,7 +8,7 @@ export const github = new Octokit({
   auth: process.env.GITHUB_TOKEN,
 });
 
-const githubUrl = "https://github.com/ShikharPandey123/Intern_assignment";
+// const githubUrl = "https://github.com/ShikharPandey123/Intern_assignment";
 
 type Response = {
   commitMessage: string;
@@ -70,17 +70,17 @@ export const pullCommits = async (projectId: string) => {
         commitAuthorName: unprocessedCommits[index]!.commitAuthorName,
         commitAuthorAvatar: unprocessedCommits[index]!.commitAuthorAvatar,
         commitDate: unprocessedCommits[index]!.commitDate,
-        // summary: summary ? summary : ""
-        summary
+        summary:summary ?? ""
       }
     }),
   });
+  console.log("commits after creation:", commits)
   return commits;
 };
 
 async function summariseCommit(githubUrl: string, commitHash: string) {
   //get the diff,then pass the diff into ai
-  const { data } = await axios.get(`${githubUrl}/commits/${commitHash}.diff`, {
+  const { data } = await axios.get(`${githubUrl}/commit/${commitHash}.diff`, {
     headers: {
       Accept: "application/vnd.github.v3.diff",
     },

@@ -37,6 +37,7 @@ export async function POST(request: Request) {
       },
     });
     await pullCommits(project.id);
+    console.log("Pull commits response:", await pullCommits(project.id));
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
