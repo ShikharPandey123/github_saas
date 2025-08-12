@@ -33,6 +33,7 @@ model Project {
   commits   Commit[]
   SourceCodeEmbedding SourceCodeEmbedding[]
   savedQuestions Question[]
+  meetings  Meeting[]
 }
 model UserToProject {
   id        String   @id @default(uuid())
@@ -90,4 +91,32 @@ model Commit{
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+}
+model Meeting {
+  id String @id @default(uuid())
+  projectId String
+  project Project @relation(fields: [projectId], references: [id])
+  name String
+  meetingUrl String
+  meetingDate DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  issues Issue[]
+  status MeetingStatus @default(PROCESSING)
+}
+enum MeetingStatus {
+  PROCESSING
+  COMPLETED
+}
+model Issue {
+  id String @id @default(uuid())
+  start String
+  end String
+  gist String
+  headline String
+  summary String
+  meetingId String?
+  meeting Meeting? @relation(fields: [meetingId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
