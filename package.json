@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "tsx lib/gemini.ts",
+    "start": "tsx lib/assembly.ts",
     "lint": "next lint"
   },
   "dependencies": {
@@ -54,6 +54,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.1",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^12.1.0",
     "ignore": "^7.0.5",
