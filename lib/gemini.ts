@@ -1,5 +1,7 @@
+"use server"
 import {GoogleGenerativeAI} from '@google/generative-ai';
 import { Document } from '@langchain/core/documents';
+import axios from 'axios';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 const model = genAI.getGenerativeModel({
@@ -278,15 +280,50 @@ export async function summariseCode(doc: Document) {
   `,
     ]);
     return response.response.text();
-  } catch (error) {
+  } catch{
     return ""
   }
 }
-export async function generateEmbedding(summary:string){
-  const model = genAI.getGenerativeModel({
-    model:"text-embedding-004"
-  })
-  const result = await model.embedContent(summary)
-  const embedding = result.embedding
-  return embedding.values
+// export async function generateEmbedding(summary:string){
+//    console.log("Google API Key exists:", !!process.env.GEMINI_API_KEY);
+//   const model = genAI.getGenerativeModel({
+//     model:"text-embedding-004"
+//   })
+//   const result = await model.embedContent(summary)
+//   const embedding = result.embedding
+//   return embedding.values
+// }
+
+export async function generateEmbedding(summary: string): Promise<number[]> {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("Gemini API Key not found in environment variables");
+  }
+
+  try {
+    const { data } = await axios.post<{
+      embedding: { values: number[] };
+    }>(
+      `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        content: {
+          parts: [{ text: summary }],
+        },
+      },
+      {
+        headers: { "Content-Type": "application/json" },
+        timeout: 10000,
+      }
+    );
+
+    return data.embedding.values;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error(
+        "Axios error:",
+        error.response?.status,
+        error.response?.data || error.message
+      );
+    }
+    throw new Error("Failed to generate embedding from Google API");
+  }
 }
