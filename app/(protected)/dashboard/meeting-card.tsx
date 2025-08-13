@@ -12,6 +12,8 @@ import { uploadFile } from "@/lib/firebase";
 import useMeetings from "@/app/hooks/use-meetings";
 import useCreateMeeting from "@/app/hooks/use-create-meeting";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
+import axios from "axios";
 
 type Meeting = {
   id: string;
@@ -22,6 +24,18 @@ type Meeting = {
 
 const MeetingCard: React.FC = () => {
   const { projectId } = useProject();
+  // const { project } = useProject();
+  const processMeeting = useMutation({
+       mutationFn: async (meetingData: { projectId: string; meetingUrl: string; meetingId: string }) => {
+        const{meetingUrl,meetingId, projectId} = meetingData;
+        const response = await axios.post("/api/process-meeting", {
+          meetingUrl,
+          projectId,
+          meetingId
+        });
+        return response.data;
+       }
+  })
   const { data: meetings = [], isLoading: loadingMeetings, error: loadError } = useMeetings();
   const { mutate: createMeeting, isPending: isUploading, error: uploadError } = useCreateMeeting();
   const [progress, setProgress] = React.useState(0);
@@ -47,9 +61,14 @@ const MeetingCard: React.FC = () => {
             name: file.name,
           },
           {
-            onSuccess: () => {
-              console.log("Meeting created successfully");
+            onSuccess: (meeting) => {
+              // console.log("Meeting created successfully");
               toast.success("Meeting uploaded successfully!");
+              processMeeting.mutateAsync({
+                projectId,
+                meetingUrl: downloadURL,
+                meetingId: meeting.id
+              });
               setProgress(0);
             },
             onError: (error) => {
@@ -63,7 +82,7 @@ const MeetingCard: React.FC = () => {
         toast.error("Failed to upload file");
       }
     },
-    [projectId, createMeeting]
+    [projectId, createMeeting, processMeeting]
   );
 
   const { getRootProps, getInputProps } = useDropzone({

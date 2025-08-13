@@ -7,10 +7,12 @@ import useMeetings from "@/app/hooks/use-meetings";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import useDeleteMeeting from "@/app/hooks/use-delete-meeting";
 
 export default function MeetingsPage() {
   //   const { projectId } = useProject();
   const { data: meetings, isLoading } = useMeetings();
+  const { deleteMeeting, loading } = useDeleteMeeting();
 
   return (
     <>
@@ -51,7 +53,9 @@ export default function MeetingsPage() {
             </div>
             <div className="flex items-center flex-none gap-x-4">
               <Link href={`/meetings/${meeting.id}`}>
-                <Button variant="outline">View Meeting</Button>
+                <Button variant="outline">View</Button>
+                <Button variant="destructive" disabled={loading}
+                onClick={() => deleteMeeting(meeting.id)}>{loading ? "Deleting..." : "Delete"}</Button>
               </Link>
             </div>
           </li>
