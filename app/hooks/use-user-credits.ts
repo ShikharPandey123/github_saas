@@ -12,7 +12,7 @@ export default function useUserCredits() {
       const response = await axios.get("/api/getUserCredits");
       return response.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000, // 30 seconds (shorter for testing)
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 }

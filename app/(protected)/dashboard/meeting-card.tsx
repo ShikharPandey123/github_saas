@@ -24,6 +24,7 @@ type Meeting = {
 
 const MeetingCard: React.FC = () => {
   const { projectId } = useProject();
+  const [isMounted, setIsMounted] = React.useState(false);
   // const { project } = useProject();
   const processMeeting = useMutation({
        mutationFn: async (meetingData: { projectId: string; meetingUrl: string; meetingId: string }) => {
@@ -39,6 +40,10 @@ const MeetingCard: React.FC = () => {
   const { data: meetings = [], isLoading: loadingMeetings, error: loadError } = useMeetings();
   const { mutate: createMeeting, isPending: isUploading, error: uploadError } = useCreateMeeting();
   const [progress, setProgress] = React.useState(0);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const onDrop = React.useCallback(
     async (acceptedFiles: File[]) => {
@@ -138,8 +143,10 @@ const MeetingCard: React.FC = () => {
 
       {/* Meetings list */}
       <div className="mt-6 w-full">
-        {loadingMeetings ? (
-          <div className="text-center text-gray-500 text-sm">Loading meetings...</div>
+        {!isMounted || loadingMeetings ? (
+          <div className="text-center text-gray-500 text-sm">
+            {!isMounted ? "No meetings yet" : "Loading meetings..."}
+          </div>
         ) : meetings.length === 0 ? (
           <div className="text-center text-gray-500 text-sm">No meetings yet</div>
         ) : (
