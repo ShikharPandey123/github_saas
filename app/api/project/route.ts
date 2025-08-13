@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { pullCommits } from "@/lib/github";
 import { indexGithubRepo } from "@/lib/github-loader";
+import { checkCredits } from "@/lib/github-credits";
 
 const createProjectSchema = z.object({
   githubUrl: z.string(),
@@ -25,22 +26,61 @@ export async function POST(request: Request) {
     const body = await request.json();
     const input = createProjectSchema.parse(body);
     
-    // First, create the project
-    const project = await prisma.project.create({
-      data: {
-        githubUrl: input.githubUrl,
-        name: input.name,
-        userToProjects: {
-          create: [
-            {
-              userId: userId,
-            },
-          ],
-        },
-      },
+    // Check file count and user credits
+    const fileCount = await checkCredits(input.githubUrl, input.githubToken);
+    console.log("Repository file count:", fileCount);
+    
+    // Get user's current credits
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { credits: true }
     });
 
-    console.log("Project created:", project.id);
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    if (user.credits < fileCount) {
+      return NextResponse.json(
+        { error: `Insufficient credits. Repository has ${fileCount} files but you only have ${user.credits} credits.` },
+        { status: 400 }
+      );
+    }
+
+    // Use a transaction to ensure credits are deducted and project is created atomically
+    const result = await prisma.$transaction(async (tx) => {
+      // Deduct credits from user
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          credits: {
+            decrement: fileCount
+          }
+        }
+      });
+
+      // Create the project
+      const project = await tx.project.create({
+        data: {
+          githubUrl: input.githubUrl,
+          name: input.name,
+          userToProjects: {
+            create: [
+              {
+                userId: userId,
+              },
+            ],
+          },
+        },
+      });
+
+      return project;
+    });
+
+    console.log("Project created and credits deducted:", result.id, "Credits used:", fileCount);
 
     // Small delay to ensure transaction is committed
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -48,7 +88,7 @@ export async function POST(request: Request) {
     // Handle background operations with proper error handling
     try {
       console.log("Starting indexGithubRepo...");
-      await indexGithubRepo(project.id, input.githubUrl, input.githubToken);
+      await indexGithubRepo(result.id, input.githubUrl, input.githubToken);
       console.log("indexGithubRepo completed");
     } catch (indexError) {
       console.error("Error indexing GitHub repo:", indexError);
@@ -57,14 +97,14 @@ export async function POST(request: Request) {
 
     try {
       console.log("Starting pullCommits...");
-      await pullCommits(project.id);
+      await pullCommits(result.id);
       console.log("pullCommits completed");
     } catch (commitError) {
       console.error("Error pulling commits:", commitError);
       // Don't fail the entire operation, just log the error
     }
 
-    return NextResponse.json(project, { status: 201 });
+    return NextResponse.json(result, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
@@ -96,6 +136,9 @@ export async function GET() {
           },
         },
         deletedAt: null,
+        isArchived: {
+          not: true,
+        },
       },
     });
     return NextResponse.json(projects);

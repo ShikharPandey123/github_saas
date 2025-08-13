@@ -1,14 +1,14 @@
 'use client'
 
 import { Button } from "@/components/ui/button"
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 import { Bot, CreditCard, LayoutDashboard, Plus, Presentation } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import useProject from '@/app/hooks/use-project';
-import { useEffect, useState } from "react"
+// import { useEffect, useState } from "react"
 
 const items = [
     {
@@ -35,17 +35,20 @@ const items = [
 
 export function AppSidebar() {
     const pathname = usePathname();
-    const open = useSidebar();
+    const router = useRouter();
    const { projects = [], projectId, setProjectId } = useProject();
 
+    const handleProjectClick = (selectedProjectId: string) => {
+        setProjectId(selectedProjectId);
+        router.push('/dashboard');
+    };
+
     return (
-       <Sidebar collapsible="icon" variant="floating">
+       <Sidebar collapsible="icon" variant="sidebar">
             <SidebarHeader>
                 <div className="flex items-center gap-2">
                     <Image src='/logo.png' alt='Logo' width={32} height={32} />
-                    {open && (
-                        <h1 className="text-xl font-bold text-primary/80">Commitly</h1>
-                    )}  
+                    <h1 className="text-xl font-bold text-primary/80">Commitly</h1>
                 </div>
             </SidebarHeader>
             <SidebarContent>
@@ -82,7 +85,10 @@ export function AppSidebar() {
                             return (
                                 <SidebarMenuItem key={project.id}>
                                     <SidebarMenuButton asChild>
-                                        <div onClick={() => setProjectId(project.id)}>
+                                        <div 
+                                            onClick={() => handleProjectClick(project.id)}
+                                            className="cursor-pointer"
+                                        >
                                             <div className={cn(
                                                 'rounded-sm border size-6 flex items-center justify-center text-sm bg-white text-primary',
                                                 {
@@ -104,14 +110,14 @@ export function AppSidebar() {
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {open && <SidebarMenuItem>
+                            <SidebarMenuItem>
                                 <Link href="/create">
-                                    <Button size="sm" variant={"outline"} className="w-fit">
+                                    <Button size="sm" variant={"outline"} className="w-full">
                                         <Plus/>
                                         Create Project
                                     </Button>
                                 </Link>
-                            </SidebarMenuItem>}
+                            </SidebarMenuItem>
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>

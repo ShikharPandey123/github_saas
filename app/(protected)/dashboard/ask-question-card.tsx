@@ -71,30 +71,32 @@ const AskQuestionCard = () => {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[80vw]">
+        <DialogContent className="w-[95vw] max-w-[90vw] sm:max-w-[80vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center gap-2">
-              <DialogTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <DialogTitle className="flex items-center gap-2">
                 <Image src="/logo.png" alt="Commitly" width={40} height={40} />
+                <span className="hidden sm:inline">Ask Commitly</span>
               </DialogTitle>
-              <Button disabled={saveAnswer.isPending} variant={"outline"} onClick={onSaveAnswer}>
+              <Button disabled={saveAnswer.isPending} variant={"outline"} onClick={onSaveAnswer} className="w-full sm:w-auto">
                 Save Answer
               </Button>
             </div>
           </DialogHeader>
-          <MDEditor.Markdown
-            source={answer}
-            className="max-w-[70vw] !h-full max-h-[40vh] overflow-scroll"
-          />
-          <div className="h-4"></div>
-          <CodeReferences filesReferences={filesReferences} />
-          <Button type="button" onClick={() => setOpen(false)}>
+          <div className="space-y-4">
+            <MDEditor.Markdown
+              source={answer}
+              className="w-full max-h-[40vh] overflow-auto text-sm"
+            />
+            <CodeReferences filesReferences={filesReferences} />
+          </div>
+          <Button type="button" onClick={() => setOpen(false)} className="w-full sm:w-auto">
             Close
           </Button>
         </DialogContent>
       </Dialog>
 
-      <Card className="relative col-span-3">
+      <Card className="relative lg:col-span-3">
         <CardHeader>
           <CardTitle>Ask a Question</CardTitle>
         </CardHeader>

@@ -30,7 +30,7 @@ const InviteButton = () => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite Team Members</DialogTitle>
+            <DialogTitle>Invite Members</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-gray-600">
             Ask them to copy and past this link

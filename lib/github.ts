@@ -42,7 +42,7 @@ export const getCommitHashes = async (
   }));
 };
 export const pullCommits = async (projectId: string) => {
-  const { project, githubUrl } = await fetchProjectGithubUrl(projectId);
+  const { githubUrl } = await fetchProjectGithubUrl(projectId);
   const commitHashes = await getCommitHashes(githubUrl);
   const unprocessedCommits = await filterUnprocessedCommits(
     commitHashes,
@@ -97,8 +97,7 @@ async function fetchProjectGithubUrl(projectId: string) {
     throw new Error("Project not found or GitHub URL is missing");
   }
   return {
-    project,
-    githubUrl: project?.githubUrl,
+    githubUrl: project.githubUrl,
   };
 }
 async function filterUnprocessedCommits(

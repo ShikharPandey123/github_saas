@@ -102,7 +102,7 @@ const MeetingCard: React.FC = () => {
   const error = loadError ? "Failed to load meetings" : uploadError ? "Upload failed" : null;
 
   return (
-    <Card className="col-span-2 flex flex-col items-center justify-center p-6">
+    <Card className="lg:col-span-2 flex flex-col items-center justify-center p-6">
       {isUploading ? (
         <div className="flex flex-col items-center gap-4">
           <div style={{ width: 96, height: 96 }}>
