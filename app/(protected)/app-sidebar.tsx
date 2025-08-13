@@ -8,6 +8,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import useProject from '@/app/hooks/use-project';
+import { useEffect, useState } from "react"
 
 const items = [
     {

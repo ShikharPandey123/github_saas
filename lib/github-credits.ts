@@ -1,7 +1,3 @@
-import  {GithubRepoLoader} from '@langchain/community/document_loaders/web/github'
-import { Document } from '@langchain/core/documents';
-import { generateEmbedding, summariseCode } from './gemini';
-import { prisma } from './prisma';
 import { Octokit } from 'octokit';
 
 const getFileCount = async (path: string, octokit: Octokit, githubOwner: string, githubRepo: string, acc: number = 0) => {
@@ -33,20 +29,44 @@ const getFileCount = async (path: string, octokit: Octokit, githubOwner: string,
       }
       
       if (directories.length > 0) {
+        // Limit the number of directories to prevent rate limiting
+        const limitedDirectories = directories.slice(0, 10); // Only check first 10 directories
+        console.log(`Processing ${limitedDirectories.length} out of ${directories.length} directories`);
+        
         const directoryCounts = await Promise.all(
-          directories.map(dirPath => getFileCount(dirPath, octokit, githubOwner, githubRepo, 0))
+          limitedDirectories.map(dirPath => getFileCount(dirPath, octokit, githubOwner, githubRepo, 0))
         );
         fileCount += directoryCounts.reduce((acc, count) => acc + count, 0);
+        
+        // If we skipped directories, add an estimated count
+        if (directories.length > 10) {
+          const avgFilesPerDir = fileCount / limitedDirectories.length || 1;
+          const estimatedRemainingFiles = (directories.length - 10) * avgFilesPerDir;
+          fileCount += Math.round(estimatedRemainingFiles);
+          console.log(`Estimated additional files from remaining directories: ${Math.round(estimatedRemainingFiles)}`);
+        }
       }
       
       return acc + fileCount;
     }
     return acc;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in getFileCount:", error);
+    
+    // Handle rate limit errors
+    if (error && typeof error === 'object' && 'status' in error && error.status === 403) {
+      throw new Error('GitHub API rate limit exceeded. Please provide a GitHub token for higher limits.');
+    }
+    
+    // Handle other GitHub API errors
+    if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+      throw new Error('Repository not found or not accessible.');
+    }
+    
     throw error;
   }
 }
+
 export const checkCredits = async (githubUrl: string, githubToken?: string) => {
   try {
     console.log("checkCredits called with:", { githubUrl, hasToken: !!githubToken });
@@ -75,54 +95,4 @@ export const checkCredits = async (githubUrl: string, githubToken?: string) => {
     console.error("Error in checkCredits:", error);
     throw error;
   }
-}
-
-export const loadGithubRepo = async (githubUrl:string,githubToken?:string) => {
-  const loader = new GithubRepoLoader(githubUrl,{
-    accessToken: githubToken || '',
-    branch: 'main',
-    ignoreFiles:['package-lock.json','yarn.lock','pnpm-lock.yaml'],
-    recursive: true,
-    unknown: 'warn',
-    maxConcurrency: 5
-  });
-  const docs = await loader.load();
-  return docs;
-}
-// console.log(await loadGithubRepo('https://github.com/ShikharPandey123/github_saas'))
-
-export const indexGithubRepo = async (projectId:string, githubUrl:string, githubToken?:string) => {
-  const docs = await loadGithubRepo(githubUrl, githubToken);
-  const allEmbeddings = await generateEmbeddings(docs);
-  await Promise.allSettled(allEmbeddings.map(async (embedding, index) => {
-    console.log(`processing ${index} of ${allEmbeddings.length}`)
-    if(!embedding)return
-    const sourceCodeEmbedding = await prisma.sourceCodeEmbedding.create({
-      data: {
-        projectId,
-        summary: embedding.summary,
-        sourceCode: embedding.sourceCode,
-        fileName: embedding.fileName
-      }
-    });
-    await prisma.$executeRaw`
-    UPDATE "SourceCodeEmbedding"
-    SET "summaryEmbedding" = ${embedding.embedding}::vector
-    WHERE "id" = ${sourceCodeEmbedding.id}
-    `
-  }));
-}
-
-const generateEmbeddings = async (docs: Document[]) => {
-  // Generate embeddings for the documents
-  return await Promise.all(docs.map(async doc =>{
-    const summary = await summariseCode(doc)
-    const embedding = await generateEmbedding(summary)
-    return{
-        summary,
-        embedding,
-        sourceCode: JSON.parse(JSON.stringify(doc.pageContent)),
-        fileName: doc.metadata.source,
-    }
-  }));
 }

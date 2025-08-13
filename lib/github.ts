@@ -117,4 +117,3 @@ async function filterUnprocessedCommits(
   );
   return unprocessedCommits;
 }
-await pullCommits("a544b103-8092-422f-bb0c-4b1f270b962e").then(console.log);

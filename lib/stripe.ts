@@ -36,3 +36,4 @@ export async function createCheckoutSession(credits:number){
     });
     return redirect(session.url || "/");
 }
+// stripe listen --forward-to localhost:3000/api/webhook/stripe

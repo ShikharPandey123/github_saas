@@ -24,6 +24,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const input = createProjectSchema.parse(body);
+    
+    // First, create the project
     const project = await prisma.project.create({
       data: {
         githubUrl: input.githubUrl,
@@ -37,17 +39,39 @@ export async function POST(request: Request) {
         },
       },
     });
-    await indexGithubRepo(project.id, input.githubUrl, input.githubToken);
-    await pullCommits(project.id);
-    // console.log("Pull commits response:", await pullCommits(project.id));
+
+    console.log("Project created:", project.id);
+
+    // Small delay to ensure transaction is committed
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Handle background operations with proper error handling
+    try {
+      console.log("Starting indexGithubRepo...");
+      await indexGithubRepo(project.id, input.githubUrl, input.githubToken);
+      console.log("indexGithubRepo completed");
+    } catch (indexError) {
+      console.error("Error indexing GitHub repo:", indexError);
+      // Don't fail the entire operation, just log the error
+    }
+
+    try {
+      console.log("Starting pullCommits...");
+      await pullCommits(project.id);
+      console.log("pullCommits completed");
+    } catch (commitError) {
+      console.error("Error pulling commits:", commitError);
+      // Don't fail the entire operation, just log the error
+    }
+
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    console.error(error);
+    console.error("Project creation error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }
