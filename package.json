@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "vercel-build": "npm install --legacy-peer-deps && next build",
+    "vercel-build": "npx npm-force-resolutions && npm install --legacy-peer-deps && next build",
     "start": "tsx lib/assembly.ts",
     "lint": "next lint"
   },
@@ -94,5 +94,8 @@
     "tsx": "^4.20.3",
     "tw-animate-css": "^1.3.6",
     "typescript": "^5.9.2"
-  }
+  },
+  "resolutions": {
+  "zod": "^4.0.15"
+}
 }
