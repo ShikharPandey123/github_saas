@@ -1,4 +1,4 @@
-# GitHub SaaS – AI-Powered Project Knowledge & Collaboration Platform
+# Commitly – AI-Powered Github code summarizer and collaborative platform
 
 ## Overview
 
