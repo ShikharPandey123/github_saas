@@ -8,7 +8,6 @@ import { Presentation, Upload } from "lucide-react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import useProject from "@/app/hooks/use-project";
-import { uploadFile } from "@/lib/firebase";
 import useMeetings from "@/app/hooks/use-meetings";
 import useCreateMeeting from "@/app/hooks/use-create-meeting";
 import { toast } from "sonner";
@@ -25,21 +24,23 @@ type Meeting = {
 const MeetingCard: React.FC = () => {
   const { projectId } = useProject();
   const [isMounted, setIsMounted] = React.useState(false);
-  // const { project } = useProject();
+
   const processMeeting = useMutation({
-       mutationFn: async (meetingData: { projectId: string; meetingUrl: string; meetingId: string }) => {
-        const{meetingUrl,meetingId, projectId} = meetingData;
-        const response = await axios.post("/api/process-meeting", {
-          meetingUrl,
-          projectId,
-          meetingId
-        });
-        return response.data;
-       }
-  })
+    mutationFn: async (meetingData: { projectId: string; meetingUrl: string; meetingId: string }) => {
+      const { meetingUrl, meetingId, projectId } = meetingData;
+      const response = await axios.post("/api/process-meeting", {
+        meetingUrl,
+        projectId,
+        meetingId
+      });
+      return response.data;
+    }
+  });
+
   const { data: meetings = [], isLoading: loadingMeetings, error: loadError } = useMeetings();
-  const { mutate: createMeeting, isPending: isUploading, error: uploadError } = useCreateMeeting();
-  const [progress, setProgress] = React.useState(0);
+
+  // NEW: The updated hook handles both file upload and meeting creation
+  const { mutate: createMeeting, isPending: isUploading, error: uploadError, progress: uploadProgress } = useCreateMeeting();
 
   React.useEffect(() => {
     setIsMounted(true);
@@ -50,42 +51,28 @@ const MeetingCard: React.FC = () => {
       if (!projectId || acceptedFiles.length === 0) return;
 
       const file = acceptedFiles[0];
-      setProgress(0);
-      
-      try {
-        console.log("Starting upload for:", file.name);
-        // Upload file to Firebase
-        const downloadURL = await uploadFile(file, setProgress) as string;
-        console.log("File uploaded, URL:", downloadURL);
-        
-        // Call mutation to create meeting
-        createMeeting(
-          {
-            projectId,
-            meetingUrl: downloadURL,
-            name: file.name,
+
+      createMeeting(
+        {
+          projectId,
+          file,
+          name: ""
+        },
+        {
+          onSuccess: (meeting) => {
+            toast.success("Meeting uploaded successfully!");
+            processMeeting.mutateAsync({
+              projectId,
+              meetingUrl: meeting.meetingUrl,
+              meetingId: meeting.id
+            });
           },
-          {
-            onSuccess: (meeting) => {
-              // console.log("Meeting created successfully");
-              toast.success("Meeting uploaded successfully!");
-              processMeeting.mutateAsync({
-                projectId,
-                meetingUrl: downloadURL,
-                meetingId: meeting.id
-              });
-              setProgress(0);
-            },
-            onError: (error) => {
-              console.error("Create meeting error:", error);
-              toast.error("Failed to create meeting");
-            },
-          }
-        );
-      } catch (error) {
-        console.error("Upload error:", error);
-        toast.error("Failed to upload file");
-      }
+          onError: (error) => {
+            console.error("Create meeting error:", error);
+            toast.error("Failed to create meeting");
+          },
+        }
+      );
     },
     [projectId, createMeeting, processMeeting]
   );
@@ -107,9 +94,9 @@ const MeetingCard: React.FC = () => {
         <div className="flex flex-col items-center gap-4">
           <div style={{ width: 96, height: 96 }}>
             <CircularProgressbar
-              value={progress}
+              value={uploadProgress}
               maxValue={100}
-              text={`${Math.round(progress)}%`}
+              text={`${Math.round(uploadProgress)}%`}
               styles={buildStyles({
                 pathColor: "#6366F1",
                 textColor: "#111827",
@@ -145,9 +132,9 @@ const MeetingCard: React.FC = () => {
       <div className="mt-6 w-full">
         {!isMounted || loadingMeetings ? (
           <div className="text-center text-gray-500 text-sm">
-            {!isMounted ? "No meetings yet" : "Loading meetings..."}
+            {!isMounted ? "Loading..." : "Loading meetings..."}
           </div>
-        ) : meetings.length === 0 ? (
+        ) : !meetings || meetings.length === 0 ? (
           <div className="text-center text-gray-500 text-sm">No meetings yet</div>
         ) : (
           <ul className="space-y-2">
@@ -156,7 +143,7 @@ const MeetingCard: React.FC = () => {
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{meeting.name}</span>
                   <span className="text-xs text-gray-500">
-                    {new Date(meeting.createdAt).toLocaleString()}
+                    {isMounted ? new Date(meeting.createdAt).toLocaleString() : meeting.createdAt}
                   </span>
                 </div>
                 <a

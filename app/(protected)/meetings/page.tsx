@@ -11,8 +11,27 @@ import useDeleteMeeting from "@/app/hooks/use-delete-meeting";
 
 export default function MeetingsPage() {
   //   const { projectId } = useProject();
-  const { data: meetings, isLoading } = useMeetings();
-  const { deleteMeeting, loading } = useDeleteMeeting();
+  const { data: meetings, isLoading, refetch } = useMeetings();
+  const { deleteMeeting, loading } = useDeleteMeeting(() => {
+    refetch(); // Refetch meetings after successful deletion
+  });
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!isMounted) {
+    return (
+      <>
+        <MeetingCard />
+        <div className="h-6"></div>
+        <h1 className="text-xl font-semibold">Meetings</h1>
+        <div>Loading...</div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -21,10 +40,11 @@ export default function MeetingsPage() {
       <h1 className="text-xl font-semibold">Meetings</h1>
 
       {isLoading && <div>Loading...</div>}
-      {meetings && meetings.length === 0 && <div>No meetings found</div>}
+      {!isLoading && (!meetings || meetings.length === 0) && <div>No meetings found</div>}
 
-      <ul className="divide-y divide-grey-200">
-        {meetings?.map((meeting) => (
+      {!isLoading && meetings && meetings.length > 0 && (
+        <ul className="divide-y divide-grey-200">
+          {meetings.map((meeting) => (
           <li
             key={meeting.id}
             className="flex items-center justify-between py-5 gap-x-6"
@@ -48,19 +68,27 @@ export default function MeetingsPage() {
             </div>
 
             <div className="flex items-center text-xs text-gray-500 gap-x-2">
-              <p className="whitespace-nowrap">{meeting.createdAt}</p>
-              <p className="truncate">{meeting.issues.length} issues</p>
+              <p className="whitespace-nowrap">
+                {isMounted ? new Date(meeting.createdAt).toLocaleDateString() : meeting.createdAt}
+              </p>
+              <p className="truncate">{meeting.issues?.length || 0} issues</p>
             </div>
             <div className="flex items-center flex-none gap-x-4">
               <Link href={`/meetings/${meeting.id}`}>
                 <Button variant="outline">View</Button>
-                <Button variant="destructive" disabled={loading}
-                onClick={() => deleteMeeting(meeting.id)}>{loading ? "Deleting..." : "Delete"}</Button>
               </Link>
+              <Button 
+                variant="destructive" 
+                disabled={loading}
+                onClick={() => deleteMeeting(meeting.id)}
+              >
+                {loading ? "Deleting..." : "Delete"}
+              </Button>
             </div>
           </li>
         ))}
       </ul>
+      )}
     </>
   );
 }

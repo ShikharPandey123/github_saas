@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { VideoIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Issue = {
   id: string;
@@ -31,6 +31,11 @@ type Issue = {
 
 export default function IssuesList({ meetingId }: { meetingId: string }) {
   const { data: meeting, isLoading } = useMeetingById(meetingId);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   if (isLoading) return <div>Loading...</div>;
   if (!meeting) return <div>No meeting found</div>;
@@ -44,7 +49,7 @@ export default function IssuesList({ meetingId }: { meetingId: string }) {
           </div>
           <h1>
             <div className="text-sm leading-6 text-gray-500">
-              Meeting on {new Date(meeting.createdAt).toLocaleDateString()}
+              Meeting on {isMounted ? new Date(meeting.createdAt).toLocaleDateString() : meeting.createdAt}
             </div>
             <div className="mt-1 text-base font-semibold leading-6 text-gray-900">
               {meeting.name}
@@ -52,9 +57,15 @@ export default function IssuesList({ meetingId }: { meetingId: string }) {
           </h1>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {meeting.issues.map((issue) => (
-            <IssueCard key={issue.id} issue={issue} />
-          ))}
+          {meeting.issues && meeting.issues.length > 0 ? (
+            meeting.issues.map((issue) => (
+              <IssueCard key={issue.id} issue={issue} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8 text-gray-500">
+              No issues found for this meeting
+            </div>
+          )}
         </div>
       </div>
     </>

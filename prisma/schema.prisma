@@ -102,6 +102,7 @@ model Meeting {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   name String
   meetingUrl String
+  cloudinaryPublicId  String?
   meetingDate DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
