@@ -96,6 +96,6 @@
     "typescript": "^5.9.2"
   },
   "resolutions": {
-  "zod": "^4.0.15"
+  "zod": "4.0.15"
 }
 }
