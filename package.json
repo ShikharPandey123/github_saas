@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "vercel-build": "npx npm-force-resolutions && npm install --legacy-peer-deps && next build",
     "start": "tsx lib/assembly.ts",
     "lint": "next lint"
   },
