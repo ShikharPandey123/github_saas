@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Octokit } from "octokit";
+import { Octokit } from "@octokit/rest";
 import { prisma } from "./prisma";
 import { aiSummariseCommit } from "./gemini";
 import axios from "axios";

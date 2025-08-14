@@ -2,7 +2,7 @@ import  {GithubRepoLoader} from '@langchain/community/document_loaders/web/githu
 import { Document } from '@langchain/core/documents';
 import { generateEmbedding, summariseCode } from './gemini';
 import { prisma } from './prisma';
-import { Octokit } from 'octokit';
+import { Octokit } from '@octokit/rest';
 
 const getFileCount = async (path: string, octokit: Octokit, githubOwner: string, githubRepo: string, acc: number = 0) => {
   try {
