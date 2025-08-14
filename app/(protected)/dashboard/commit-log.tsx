@@ -50,12 +50,13 @@ export default function CommitLog() {
                 <div className="w-px translate-x-1 bg-gray-200"></div>
               </div>
               <>
-                <img
+                <Image
                   src={commit.commitAuthorAvatar}
                   alt="commit avatar"
-                  // width={56}
-                  // height={56}
-                  className="relative mt-4  size-8 flex-none rounded-full bg-gray-50"
+                  width={32}
+                  height={32}
+                  className="relative mt-4 size-8 flex-none rounded-full bg-gray-50"
+                  priority={commitIdx < 3}
                 />
                 <div className="flex-auto rounded-mg bg-white p-3 ring-1 ring-inset ring-gray-200">
                   <div className="flex justify-between gap-x-4">

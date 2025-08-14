@@ -44,20 +44,20 @@ const CodeReferences = ({ filesReferences }: Props) => {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+  <Card className="w-full max-w-full">
+      <CardHeader className="pb-3 px-2 sm:px-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 w-full">
+          <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Referenced Files
             <Badge variant="secondary" className="ml-2">
               {filesReferences.length}
             </Badge>
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <button
               onClick={() => setViewMode('code')}
-              className={`px-3 py-1 text-sm rounded-md transition-colors flex items-center gap-1 ${
+              className={`px-3 py-1 text-sm rounded-md transition-colors flex items-center gap-1 w-1/2 sm:w-auto ${
                 viewMode === 'code' 
                   ? 'bg-primary text-primary-foreground' 
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -68,7 +68,7 @@ const CodeReferences = ({ filesReferences }: Props) => {
             </button>
             <button
               onClick={() => setViewMode('markdown')}
-              className={`px-3 py-1 text-sm rounded-md transition-colors flex items-center gap-1 ${
+              className={`px-3 py-1 text-sm rounded-md transition-colors flex items-center gap-1 w-1/2 sm:w-auto ${
                 viewMode === 'markdown' 
                   ? 'bg-primary text-primary-foreground' 
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -80,9 +80,10 @@ const CodeReferences = ({ filesReferences }: Props) => {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-2 sm:px-4">
         <Tabs value={tab} onValueChange={setTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-auto gap-1 h-auto p-1 bg-gray-50">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <TabsList className="flex w-full min-w-[350px] sm:min-w-0 overflow-x-auto gap-1 h-auto p-1 bg-gray-50">
             {filesReferences.map((file) => (
               <TabsTrigger
                 key={file.fileName}
@@ -103,7 +104,6 @@ const CodeReferences = ({ filesReferences }: Props) => {
               </TabsTrigger>
             ))}
           </TabsList>
-          
           {filesReferences.map((file) => (
             <TabsContent
               key={file.fileName}
@@ -116,7 +116,6 @@ const CodeReferences = ({ filesReferences }: Props) => {
                 </Badge>
                 <span className="text-sm font-medium text-gray-700">{file.fileName}</span>
               </div>
-              
               {viewMode === 'code' ? (
                 <div className="rounded-lg overflow-hidden border">
                   <div className="bg-gray-800 text-gray-200 px-4 py-2 text-sm font-mono flex items-center justify-between">
@@ -147,7 +146,6 @@ const CodeReferences = ({ filesReferences }: Props) => {
                   />
                 </div>
               )}
-              
               {file.summary && (
                 <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="font-medium text-blue-900 mb-2">File Summary</h4>
@@ -156,6 +154,7 @@ const CodeReferences = ({ filesReferences }: Props) => {
               )}
             </TabsContent>
           ))}
+          </div>
         </Tabs>
       </CardContent>
     </Card>

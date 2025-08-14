@@ -47,35 +47,36 @@ const MeetingCard: React.FC = () => {
   }, []);
 
   const onDrop = React.useCallback(
-    async (acceptedFiles: File[]) => {
-      if (!projectId || acceptedFiles.length === 0) return;
+  async (acceptedFiles: File[]) => {
+    if (!projectId || acceptedFiles.length === 0) return;
 
-      const file = acceptedFiles[0];
+    const file = acceptedFiles[0];
 
-      createMeeting(
-        {
-          projectId,
-          file,
-          name: ""
+    createMeeting(
+      {
+        projectId,
+        file,
+        name: "", // optional: can set a custom name
+      },
+      {
+        onSuccess: (meeting) => {
+          toast.success("Meeting uploaded successfully!");
+          processMeeting.mutateAsync({
+            projectId,
+            meetingUrl: meeting.meetingUrl,
+            meetingId: meeting.id,
+          });
         },
-        {
-          onSuccess: (meeting) => {
-            toast.success("Meeting uploaded successfully!");
-            processMeeting.mutateAsync({
-              projectId,
-              meetingUrl: meeting.meetingUrl,
-              meetingId: meeting.id
-            });
-          },
-          onError: (error) => {
-            console.error("Create meeting error:", error);
-            toast.error("Failed to create meeting");
-          },
-        }
-      );
-    },
-    [projectId, createMeeting, processMeeting]
-  );
+        onError: (error) => {
+          console.error("Create meeting error:", error);
+          toast.error("Failed to create meeting");
+        },
+      }
+    );
+  },
+  [projectId, createMeeting, processMeeting]
+);
+
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
