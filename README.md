@@ -1,4 +1,4 @@
-# GitHub SaaS – AI-Powered Project Knowledge & Collaboration Platform
+# Commitly – AI-Powered Github code summarizer and collaborative platform
 
 ## Overview
 
@@ -95,21 +95,3 @@
 - `/public` – Static assets
 
 ---
-
-## Contributing
-
-1. Fork the repo
-2. Create your feature branch (`git checkout -b feature/YourFeature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/YourFeature`)
-5. Open a pull request
-
----
-
-## License
-
-MIT
-
----
-
-Let me know if you want to include setup screenshots, API details, or anything else!
