@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { checkCredits } from "@/lib/github-credits";
 import { prisma } from "@/lib/prisma";
 
@@ -23,32 +23,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's current credits
-    const user = await prisma.user.findUnique({
+    // Find or create user
+    let user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { credits: true }
+      select: { id: true, credits: true }
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      console.log("User not found in DB, creating...");
+
+      // Fetch user details from Clerk
+      const client = await clerkClient();
+      const clerkUser = await client.users.getUser(userId);
+      const emailAddress = clerkUser.emailAddresses[0]?.emailAddress ?? "";
+      const firstName = clerkUser.firstName ?? null;
+      const lastName = clerkUser.lastName ?? null;
+      const imageUrl = clerkUser.imageUrl ?? null;
+
+      user = await prisma.user.create({
+        data: {
+          id: userId,
+          emailAddress,
+          firstName,
+          lastName,
+          imageUrl,
+          credits: 150 // default credits
+        },
+        select: { id: true, credits: true }
+      });
     }
 
-    console.log("User found, credits:", user.credits);
+    console.log("User found/created, credits:", user.credits);
 
     // Check file count for the repository
     console.log("Calling checkCredits function...");
     const fileCount = await checkCredits(githubUrl, githubToken);
     console.log("File count result:", fileCount);
-    
-    const userCredits = user.credits;
 
     return NextResponse.json({
       fileCount,
-      userCredits,
-      hasEnoughCredits: userCredits >= fileCount
+      userCredits: user.credits,
+      hasEnoughCredits: user.credits >= fileCount
     });
 
   } catch (error) {
