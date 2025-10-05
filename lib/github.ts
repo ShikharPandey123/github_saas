@@ -2,7 +2,6 @@
 import { Octokit } from "@octokit/rest";
 import { prisma } from "./prisma";
 import { aiSummariseCommit } from "./gemini";
-import axios from "axios";
 
 export const github = new Octokit({
   auth: process.env.GITHUB_TOKEN,
@@ -17,13 +16,37 @@ type Response = {
   commitAuthorAvatar: string;
   commitDate: string;
 };
+
+function parseGithubOwnerRepo(url: string) {
+  // handle ssh form: git@github.com:owner/repo.git
+  if (url.startsWith("git@")) {
+    const m = url.match(/git@[^:]+:([^/]+)\/(.+?)(?:\.git)?(?:\/.*)?$/);
+    if (m) return { owner: m[1], repo: m[2] };
+  }
+
+  try {
+    const u = new URL(url);
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (parts.length >= 2) {
+      const owner = parts[0];
+      const repo = parts[1].replace(/\.git$/i, "");
+      return { owner, repo };
+    }
+  } catch {
+    // fallback to simple split
+    const parts = url.split("/").filter(Boolean);
+    if (parts.length >= 2) {
+      const owner = parts.slice(-2)[0];
+      const repo = parts.slice(-2)[1].replace(/\.git$/i, "");
+      return { owner, repo };
+    }
+  }
+  throw new Error("Invalid GitHub URL");
+}
 export const getCommitHashes = async (
   githubUrl: string
 ): Promise<Response[]> => {
-  const [owner, repo] = githubUrl.split("/").slice(-2);
-  if (!owner || !repo) {
-    throw new Error("Invalid GitHub URL");
-  }
+  const { owner, repo } = parseGithubOwnerRepo(githubUrl);
   const { data } = await github.rest.repos.listCommits({
     owner,
     repo,
@@ -79,13 +102,30 @@ export const pullCommits = async (projectId: string) => {
 };
 
 async function summariseCommit(githubUrl: string, commitHash: string) {
-  //get the diff,then pass the diff into ai
-  const { data } = await axios.get(`${githubUrl}/commit/${commitHash}.diff`, {
-    headers: {
-      Accept: "application/vnd.github.v3.diff",
-    },
-  });
-  return aiSummariseCommit(data) || "";
+  // fetch the diff via authenticated GitHub API to avoid web endpoint inconsistencies
+  try {
+    const { owner, repo } = parseGithubOwnerRepo(githubUrl);
+    const res = await github.request('GET /repos/{owner}/{repo}/commits/{ref}', {
+      owner,
+      repo,
+      ref: commitHash,
+      headers: {
+        accept: 'application/vnd.github.v3.diff',
+      },
+    });
+    const data = (res.data as unknown) as string;
+    console.log(`summariseCommit: fetched diff (api) for ${commitHash}, length=${String(data).length}`);
+    if (!data || String(data).trim().length === 0) {
+      console.warn(`summariseCommit: empty diff for ${commitHash}`);
+      return "";
+    }
+    const summary = await aiSummariseCommit(data);
+    console.log(`summariseCommit: summary for ${commitHash} length=${summary ? summary.length : 0}`);
+    return summary || "";
+  } catch (err) {
+    console.error(`summariseCommit: failed for ${commitHash}:`, err);
+    return "";
+  }
 }
 
 async function fetchProjectGithubUrl(projectId: string) {

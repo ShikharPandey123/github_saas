@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import AskQuestionCard from "../dashboard/ask-question-card";
 import MDEditor from "@uiw/react-md-editor";
 import CodeReferences from "../dashboard/code-references";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from "next/image";
 import { MessageCircle, Calendar, User } from "lucide-react";
 
@@ -41,6 +42,7 @@ export default function QAPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [filesForAnswer, setFilesForAnswer] = useState<{ fileName: string; sourceCode: string; summary: string }[]>([]);
   const question = questions?.[questionIndex];
 
   useEffect(() => {
@@ -65,6 +67,48 @@ export default function QAPage() {
 
     fetchQuestions();
   }, [projectId, isMounted]);
+
+  // When the selected question changes, ensure filesForAnswer is populated either from stored filesReferences
+  // or by parsing the answer's SOURCES for a "Files:" line and fetching via API.
+  useEffect(() => {
+    const loadFiles = async () => {
+      if (!question) return setFilesForAnswer([]);
+
+      // If backend stored filesReferences, use them
+      if (Array.isArray(question.filesReferences) && question.filesReferences.length > 0) {
+        setFilesForAnswer(question.filesReferences as { fileName: string; sourceCode: string; summary: string }[]);
+        return;
+      }
+
+      // Parse files from the answer's SOURCES section
+      // Look for a line starting with "Files:" and split by comma
+      const answer = question.answer || "";
+      const filesLine = answer
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .find((l) => /^files\s*:/i.test(l));
+
+      if (!filesLine) {
+        setFilesForAnswer([]);
+        return;
+      }
+
+      const list = filesLine.replace(/^files\s*:/i, "").split(",").map((s) => s.trim()).filter(Boolean);
+      if (list.length === 0 || !projectId) {
+        setFilesForAnswer([]);
+        return;
+      }
+
+      try {
+        const res = await axios.get(`/api/get-files-by-names?projectId=${projectId}&files=${encodeURIComponent(list.join(","))}`);
+        setFilesForAnswer(res.data.files ?? []);
+      } catch (e) {
+        console.error("Failed to load files for answer:", e);
+        setFilesForAnswer([]);
+      }
+    };
+    loadFiles();
+  }, [question, projectId]);
 
   if (!isMounted || loading) return (
     <div className="flex items-center justify-center min-h-[400px]">
@@ -196,29 +240,40 @@ export default function QAPage() {
               </SheetHeader>
               
               <div className="space-y-6 h-full overflow-y-auto">
-                {/* Answer Section */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <MessageCircle className="h-4 w-4 text-primary" />
-                    <h3 className="font-semibold text-gray-900">Answer</h3>
-                  </div>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="prose prose-sm max-w-none">
-                        <MDEditor.Markdown source={question.answer} />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                <Tabs defaultValue="answer" className="w-full">
+                  <TabsList>
+                    <TabsTrigger value="answer">Answer</TabsTrigger>
+                    <TabsTrigger value="files">Files</TabsTrigger>
+                  </TabsList>
 
-                {/* File References Section */}
-                {Array.isArray(question.filesReferences) && question.filesReferences.length > 0 && (
-                  <div className="space-y-3">
-                    <CodeReferences 
-                      filesReferences={question.filesReferences as { fileName: string; sourceCode: string; summary: string; }[]} 
-                    />
-                  </div>
-                )}
+                  <TabsContent value="answer">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4 text-primary" />
+                        <h3 className="font-semibold text-gray-900">Answer</h3>
+                      </div>
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="prose prose-sm max-w-none">
+                            <MDEditor.Markdown source={question.answer} />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="files">
+                    {filesForAnswer.length > 0 ? (
+                      <CodeReferences filesReferences={filesForAnswer} />
+                    ) : (
+                      <Card>
+                        <CardContent className="p-6 text-sm text-muted-foreground">
+                          No file references found for this answer.
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </div>
             </SheetContent>
           )}

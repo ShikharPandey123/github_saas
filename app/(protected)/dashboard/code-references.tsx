@@ -10,11 +10,15 @@ import MDEditor from "@uiw/react-md-editor";
 
 type Props = {
   filesReferences: { fileName: string; sourceCode: string; summary: string }[];
+  initialFileName?: string;
 };
 
-const CodeReferences = ({ filesReferences }: Props) => {
-  const [tab, setTab] = React.useState(filesReferences[0]?.fileName);
+const CodeReferences = ({ filesReferences, initialFileName }: Props) => {
+  const [tab, setTab] = React.useState(initialFileName ?? filesReferences[0]?.fileName);
   const [viewMode, setViewMode] = React.useState<'code' | 'markdown'>('code');
+  React.useEffect(() => {
+    if (initialFileName) setTab(initialFileName);
+  }, [initialFileName]);
   
   if (filesReferences.length === 0) return null;
 

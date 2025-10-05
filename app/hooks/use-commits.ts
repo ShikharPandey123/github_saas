@@ -28,7 +28,7 @@ export default function useCommits() {
   return useQuery({
     queryKey: ["commits", project?.id],
     queryFn: () => fetchCommits(project!.id),
-    enabled: !!project?.id, // only run when projectId is available
-    staleTime: 1000 * 60 * 5, // 5 min cache
+    enabled: !!project?.id, 
+    staleTime: 1000 * 60 * 5,
   });
 }
